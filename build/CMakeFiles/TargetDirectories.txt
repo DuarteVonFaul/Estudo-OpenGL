@@ -1,0 +1,3 @@
+C:/Users/Estagiario-03/Desktop/Projetos/TCC/GLFW/build/CMakeFiles/executavel.dir
+C:/Users/Estagiario-03/Desktop/Projetos/TCC/GLFW/build/CMakeFiles/edit_cache.dir
+C:/Users/Estagiario-03/Desktop/Projetos/TCC/GLFW/build/CMakeFiles/rebuild_cache.dir

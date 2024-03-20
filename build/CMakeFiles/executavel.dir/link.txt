@@ -1,0 +1,3 @@
+"C:\Program Files\CMake\bin\cmake.exe" -E rm -f CMakeFiles\executavel.dir/objects.a
+C:\msys64\mingw64\bin\ar.exe qc CMakeFiles\executavel.dir/objects.a @CMakeFiles\executavel.dir\objects1.rsp
+C:\msys64\mingw64\bin\c++.exe -mwindows -Wl,--whole-archive CMakeFiles\executavel.dir/objects.a -Wl,--no-whole-archive -o executavel.exe -Wl,--out-implib,libexecutavel.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\executavel.dir\linkLibs.rsp
