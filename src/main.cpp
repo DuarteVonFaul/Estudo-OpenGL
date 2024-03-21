@@ -1,10 +1,25 @@
 #include <GLFW/glfw3.h>
 #include <list>
+#include <string>
 #include <iostream>
 #include "lib/imgui/imgui.h"
 #include "lib/imgui/imgui_impl_glfw.h"
 #include "lib/imgui/imgui_impl_opengl3.h"
 #include <cmath>
+
+// Definição de um tipo de ponteiro para função que recebe e retorna um inteiro
+
+struct Event{
+
+};
+
+struct arender{
+
+};
+
+
+
+typedef void (*FuncaoCallback)(Event, arender);
 
 bool validateWindowInitialize(std::list<GLFWwindow*>& windows){
     for (GLFWwindow* window : windows){
@@ -23,56 +38,119 @@ void MakeContextCurrent(std::list<GLFWwindow*>& windows){
 }
 
 
-class TextArea {
+// Classe base abstrata Control
+class Control {  
+    public:
+        bool frame = false;
+        Control(bool r) : frame(r){};
+        virtual void Draw() = 0; // Método virtual puro
+        virtual void Draw(ImVec2 p, ImVec2 s) = 0;
+};
+
+// Classe ImGuiWindowManager que implementa a interface Control
+class ImGuiWindowManager{
+    private:
+        std::list<Control*> items;
+        ImVec2 pos;
+        ImVec2 size;
+        const char* title;
+
+    public:
+
+        ImGuiWindowManager(const char* title){
+            this->title = title;
+            this->pos = ImVec2(0,0);
+            this->size = ImVec2(0,0);
+        }
+
+        void add(Control* item) {
+            this->items.push_back(item);
+        }
+
+        void Draw(ImVec2 p, ImVec2 s) {
+            this->pos = p;
+            this->size = s;
+            bool aqui = true;
+            ImGui::SetNextWindowPos(pos);
+            ImGui::SetNextWindowSize(size);
+            ImGui::Begin(title,nullptr,ImGuiWindowFlags_NoResize);
+            for (Control* item : this->items) {
+                if(item->frame){
+                    item->Draw(this->pos, this->size);
+                }else{
+                    item->Draw();
+                }
+                 // Chama o método Draw de cada item
+            }
+            ImGui::End();
+        }
+
+};
+
+// Classe TextArea que implementa a interface Control
+class TextArea : public Control {
 private:
-    char textTitle[1024];
-    char textBuffer[1024];
+    char textTitle[100];
+    char textBuffer[16512];
     ImVec2 pos;
     ImVec2 size;
 
 public:
-    TextArea(){
-        // Inicializa o buffer de texto
-        this->pos = 0;
-        this->size = 0;
-        textBuffer[0] = '\0'; // Coloca o caractere nulo no início para indicar uma string vazia
-        textTitle[0] = '\0';
-
-        
+    TextArea(const char* title, ImVec2 p, ImVec2 s,bool fr = false) : pos(p), size(s), Control(fr) {
+        strcpy(textBuffer, "");; // Inicializa o buffer de texto vazio
+        strcpy(textTitle, title);
     }
 
-    void Draw(const ImVec2& p, const ImVec2& s){
-        this->pos = p;
-        this->size = s;
-        // Define a posição e tamanho da próxima janela que será criada
-        ImGui::SetNextWindowPos(ImVec2((pos.x - size.x) * 0.5f, 0));
-        ImGui::SetNextWindowSize(size);
-        
-        // Cria a janela de texto
-        ImGui::Begin("Codigo");
-        ImGui::InputText("##Title",textTitle, IM_ARRAYSIZE(textTitle));
-        // Cria o campo de texto multiline do ImGui
-        ImGui::InputTextMultiline("##textarea", textBuffer, IM_ARRAYSIZE(textBuffer), ImVec2(size.x,size.y-90));
-        ImGui::Button("Salve",ImVec2(size.x * 0.25, 20));
-        ImGui::End();
+    void Draw() override {
+        // size_t sizeBuffer = textBuffer.size() + IM_ARRAYSIZE(textTitle);
+        ImGui::InputTextMultiline(textTitle, textBuffer, + IM_ARRAYSIZE(textBuffer), ImVec2(size.x, size.y));
+    }
+
+    void Draw(ImVec2 p, ImVec2 s) override {
+        // size_t sizeBuffer = textBuffer.size() + IM_ARRAYSIZE(textTitle);
+        ImGui::InputTextMultiline(textTitle, textBuffer, + IM_ARRAYSIZE(textBuffer), ImVec2(s.x * size.x, s.y * size.y));
     }
 
     const char* GetText() const {
         return textBuffer;
     }
+
+    // void setText(const char text) {
+    //     textBuffer = text;
+    // }
+};
+
+// Classe Button que implementa a interface Control
+class Button : public Control {
+private:
+    const char* text;
+    ImVec2 size;
+    bool onClick = false;
+
+public:
+    Button(const char* t, ImVec2 s, bool fr = false) : text(t), size(s), Control(fr)  {};
+
+    void Draw() override {
+        this->onClick = false;
+        if(ImGui::Button(text, size)){
+            this->onClick = true;
+        }
+    }
+
+    void Draw(ImVec2 p, ImVec2 s){
+        if(ImGui::Button(text, s)){
+            this->onClick = true;
+        }
+    }
+
+    bool is_pressed()
+    {
+       return this->onClick;
+    }
+
 };
 
 
-// void TextArea(ImVec2 pos, ImVec2 size){
-//     char textBuffer[1024] = { 0 };
-//     ImGui::SetNextWindowPos(ImVec2((pos.x - size.x) * 0.5f, 0));
-//     ImGui::SetNextWindowSize(size);
-//     ImGui::Begin("codigo");
-//     ImGui::InputTextMultiline("##textarea", textBuffer, IM_ARRAYSIZE(textBuffer),
-//     ImVec2(size));
-
-//     ImGui::End();
-// }
 
 int main(void) {
     std::list<GLFWwindow*> windows;
@@ -148,7 +226,13 @@ int main(void) {
     bool show_demo_window = true;
     bool show_another_window = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-    TextArea textArea();
+    TextArea textArea("Sem nome",ImVec2(0, 0), ImVec2(1,0.9f),true);
+    Button button("Salvar",ImVec2(60,30),false);
+    ImGuiWindowManager codigo("Sem nome");
+    ImGuiWindowManager Pasta("Arquivos");
+    ImGuiWindowManager Items("Explorar");
+    codigo.add(&textArea);
+    codigo.add(&button);
     /* Loop until all windows are closed */
     while (!windows.empty()) {
         for (auto it = windows.begin(); it != windows.end(); ) {
@@ -167,9 +251,13 @@ int main(void) {
                     ImGui_ImplOpenGL3_NewFrame();
                     ImGui_ImplGlfw_NewFrame();
                     ImGui::NewFrame();
-                    
-                    textArea.Draw(ImVec2(display_w, display_h), ImVec2(800,display_h));
-                    
+
+                    Items.Draw(ImVec2(0,0), ImVec2(display_w *0.25,display_h*0.5));
+                    Pasta.Draw(ImVec2(0,display_h*0.5), ImVec2(display_w *0.25,display_h*0.5));
+                    codigo.Draw(ImVec2((display_w *0.5) * 0.5f, 0), ImVec2(display_w *0.5,display_h));
+                    if(button.is_pressed()){
+                        
+                    }
                     
                     // Rendering
                     ImGui::Render();
